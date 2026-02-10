@@ -1,0 +1,27 @@
+  .flights {
+    border: 1px solid black;
+    padding: 8px;
+    border-radius: 36px;
+    width: 12%;
+    color: blue;
+
+  }
+
+
+  .paytm {
+    border: 1px solid black;
+    padding: 8px;
+    border-radius: 36px;
+    width: 12%;
+    color: green;
+
+  }
+  .flex-container {
+    display: flex;
+    gap: 20px;
+  }
+
+  .grid-container {
+    display: grid;
+    gap: 30px;
+  }

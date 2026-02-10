@@ -1,0 +1,20 @@
+<!doctype html>
+
+<script>
+  const productList = [
+    {
+      productName: "Banana",
+      price: 250,
+    },
+    {
+      productName: "orange",
+      price: 400,
+    },
+  ];
+
+  const result = productList.forEach(function(copyOfProductList, index) {
+    return console.log(copyOfProductList.price);
+  });
+
+  console.log(result);
+</script>

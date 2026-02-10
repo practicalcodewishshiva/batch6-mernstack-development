@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devgnan Premium: Callbacks</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reset.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/theme/black.min.css">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+
+    <style>
+        /* --- PREMIUM GLOBAL STYLES --- */
+        body { font-family: 'Poppins', sans-serif; background: #0f0c29; }
+        
+        /* Myntra-like Gradient Text */
+        .gradient-text {
+            background: linear-gradient(90deg, #ff3f6c, #ff9068);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
+
+        /* Glassmorphism Card */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        /* --- PHONE MOCKUP STYLES --- */
+        .phone-mockup {
+            width: 300px;
+            height: 550px;
+            border: 8px solid #333;
+            border-radius: 30px;
+            background: #fff;
+            position: relative;
+            margin: 0 auto;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(255, 63, 108, 0.2);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .phone-header {
+            background: #ff3f6c;
+            color: white;
+            padding: 15px;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .phone-screen {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+
+        /* UI Elements inside Phone */
+        .skeleton-img { width: 100%; height: 200px; background: #eee; border-radius: 10px; margin-bottom: 20px; }
+        .skeleton-text { width: 80%; height: 20px; background: #eee; border-radius: 4px; margin-bottom: 10px; }
+        
+        /* Product Loaded State */
+        .product-img { width: 100%; height: 200px; object-fit: cover; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .buy-btn {
+            background: #ff3f6c;
+            color: white;
+            padding: 10px 40px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-weight: bold;
+            border: none;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #ff3f6c;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Code Block Adjustments */
+        .reveal pre code {
+            max-height: 500px;
+            font-size: 1.1em;
+            line-height: 1.4;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .step-badge {
+            background: #ff3f6c;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.6em;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="reveal">
+        <div class="slides">
+
+            <section>
+                <h1 class="gradient-text">JS Callbacks</h1>
+                <p style="opacity: 0.8; font-size: 1.2em;">Understanding Async Logic</p>
+                <div class="glass-card" style="display: inline-block; margin-top: 30px;">
+                    <span style="font-size: 0.8em; letter-spacing: 2px;">REAL WORLD SCENARIO:</span> <br>
+                    <strong style="color: #ff3f6c; font-size: 1.5em;">The Myntra App Flow</strong>
+                </div>
+            </section>
+
+            <section data-auto-animate>
+                <h3>Scenario: Opening a Product Page</h3>
+                <div style="display: flex; justify-content: center; gap: 50px; align-items: center;">
+                    
+                    <div class="phone-mockup">
+                        <div class="phone-header"><span>Myntra</span> <span>🛒</span></div>
+                        <div class="phone-screen">
+                            <div class="skeleton-img"></div>
+                            <div class="skeleton-text"></div>
+                            <div class="skeleton-text" style="width: 50%"></div>
+                        </div>
+                    </div>
+
+                    <div style="text-align: left; width: 400px;">
+                        <p class="fragment fade-up">Manam App open chesinappudu data <strong>instant ga</strong> radhu.</p>
+                        <p class="fragment fade-up" style="color:#ff9068">Server nundi product details ravalante time paduthundi.</p>
+                        <p class="fragment fade-up">So, manam <strong>wait</strong> cheyyali.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section data-auto-animate>
+                <h3>The Logic Flow</h3>
+                <div class="glass-card" style="margin-top: 40px; padding: 40px;">
+                    
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="text-align: center;" class="fragment" data-fragment-index="1">
+                            <div style="font-size: 50px;">📡</div>
+                            <p style="font-size: 0.6em; color: #aaa;">Step 1</p>
+                            <strong>Fetch Data</strong>
+                            <br><small>(Takes 2 sec)</small>
+                        </div>
+
+                        <div class="fragment" data-fragment-index="2" style="color: #ff3f6c; font-size: 40px;">
+                            ➜
+                        </div>
+
+                        <div style="text-align: center;" class="fragment" data-fragment-index="3">
+                            <div style="font-size: 50px;">📱</div>
+                            <p style="font-size: 0.6em; color: #aaa;">Step 2 (The Callback)</p>
+                            <strong>Show Product</strong>
+                            <br><small>(Execute later)</small>
+                        </div>
+                    </div>
+
+                </div>
+                <p class="fragment" style="margin-top: 30px; font-size: 0.8em; color: #ddd;">
+                    "Data vachaka matrame Screen Update avvali." <br>
+                    Here, <span style="color:#ff3f6c">Show Product</span> is the Callback Function!
+                </p>
+            </section>
+
+            <section data-auto-animate>
+                <h4 style="text-align: left;">Coding the Logic</h4>
+                <pre><code data-trim data-line-numbers="1-4|6-10|12-13" class="javascript">
+// 1. Define the Callback (What to do later)
+function showProduct(productName) {
+    console.log("Rendering UI for: " + productName);
+}
+
+// 2. Define the Main Task (Server Request)
+function fetchFromServer(productId, myCallback) {
+    console.log("Fetching data...");
+    // Simulating delay
+    setTimeout(() => {
+        let data = "Nike Shoes"; // Data arrived!
+        myCallback(data);      // Executing callback
+    }, 2000);
+}
+
+// 3. Trigger It
+fetchFromServer(101, showProduct);
+                </code></pre>
+            </section>
+
+            <section data-auto-animate>
+                <h3>Live Execution</h3>
+                <div style="display: flex; justify-content: center; gap: 40px; margin-top: 20px;">
+                    
+                    <div style="width: 40%; font-size: 0.7em; text-align: left; align-self: center;">
+                        <p class="fragment" data-fragment-index="1">
+                            <span class="step-badge">START</span> <br> 
+                            <code>fetchFromServer()</code> call chesam.
+                        </p>
+                        <p class="fragment" data-fragment-index="2">
+                            <span class="step-badge" style="background: orange;">WAITING</span> <br> 
+                            Server slow ga undi... (Loading...)
+                        </p>
+                        <p class="fragment" data-fragment-index="3">
+                            <span class="step-badge" style="background: #4caf50;">DONE</span> <br> 
+                            Data vachindi! Immediately <code>showProduct()</code> (Callback) fire ayyindi.
+                        </p>
+                    </div>
+
+                    <div class="phone-mockup">
+                        <div class="phone-header"><span>Myntra</span> <span>🛒</span></div>
+                        <div class="phone-screen">
+                            
+                            <div id="loader-state" class="fragment fade-out" data-fragment-index="3" style="position: absolute;">
+                                <div class="spinner"></div>
+                                <p style="font-size: 0.8em; margin-top: 10px;">Fetching...</p>
+                            </div>
+
+                            <div id="success-state" class="fragment fade-in" data-fragment-index="3">
+                                <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&auto=format&fit=crop&q=60" class="product-img">
+                                <h4 style="margin: 10px 0 5px 0;">Nike Air Max</h4>
+                                <p style="color: #ff3f6c; font-weight: bold;">₹ 8,999</p>
+                                <button class="buy-btn">ADD TO BAG</button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="gradient-text">Final Summary</h2>
+                <div class="glass-card" style="text-align: left;">
+                    <ul>
+                        <li style="margin-bottom: 20px;">Callback ante just oka function ni <strong>argument</strong> la pass cheyyadam.</li>
+                        <li style="margin-bottom: 20px;">Real world lo: "Task A aipoyaka, Task B cheyyi" ane situation lo vadutham.</li>
+                        <li style="color: #ff3f6c;">Example: Data fetch chesaka -> UI Update cheyyi.</li>
+                    </ul>
+                </div>
+                <p style="font-size: 0.6em; margin-top: 40px;">Next Topic: Promises & Async/Await (To fix Callback Hell)</p>
+            </section>
+
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/highlight/highlight.min.js"></script>
+    
+    <script>
+        Reveal.initialize({
+            hash: true,
+            controls: true,
+            progress: true,
+            center: true,
+            transition: 'slide',
+            backgroundTransition: 'zoom',
+            plugins: [ RevealHighlight ]
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,34 @@
+<!doctype html>
+
+<script>
+  const movieList = [
+    {
+      image: "chiranimage",
+      movieName: "Mana ShankarVarasprasad",
+      description: "Thriller",
+      likes: "420k",
+    },
+    {
+      image: "bhoomika",
+      movieName: "Euphoria",
+      description: "Drama",
+      likes: "270",
+    },
+    {
+      image: "I dont know",
+      movieName: "withLove",
+      description: "Romantic",
+      likes: "900",
+    },
+  ];
+
+  // function instead on single primitives condition based kakunda
+
+  // foreach callback based loopingmovieList
+
+  const finalValues = movieList.forEach(function (copyOfMovieList, index) {
+    return copyOfMovieList + " " + index;
+  });
+
+  console.log(finalValues, "finalValues");
+</script>

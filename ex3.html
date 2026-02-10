@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS Memory: Behind The Scenes</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0d1117; --box: #161b22; --border: #30363d;
+            --accent: #58a6ff; --stack: #79c0ff; --heap: #d2a8ff;
+            --green: #3fb950; --log-bg: #010409;
+        }
+
+        body {
+            margin: 0; padding: 20px; background: var(--bg); color: #c9d1d9;
+            font-family: 'Inter', sans-serif; display: flex; flex-direction: column; align-items: center;
+        }
+
+        .layout { display: flex; width: 100%; max-width: 1200px; gap: 20px; height: 600px; }
+
+        /* Left: Input & Editor */
+        .editor-side { flex: 1; display: flex; flex-direction: column; gap: 15px; }
+        .box { background: var(--box); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+        
+        /* Middle: Visualizer */
+        .viz-side { flex: 1.5; display: flex; gap: 15px; position: relative; }
+        .mem-col { flex: 1; border: 1px solid var(--border); border-radius: 10px; padding: 15px; position: relative; }
+        
+        /* Right: Engine Logs */
+        .log-side { flex: 0.8; background: var(--log-bg); border: 1px solid var(--border); border-radius: 10px; padding: 15px; overflow-y: auto; }
+
+        input { background: #21262d; border: 1px solid #444; color: var(--accent); border-radius: 4px; padding: 3px 8px; width: 100px; font-family: 'Fira Code'; }
+        
+        .stack-item { background: #21262d; padding: 10px; border-radius: 5px; margin-bottom: 10px; border-left: 4px solid var(--stack); font-size: 13px; display: flex; justify-content: space-between; }
+        .heap-obj { border: 2px solid var(--heap); padding: 15px; border-radius: 8px; position: relative; margin-bottom: 20px; transition: 0.3s; }
+        .addr { position: absolute; top: -10px; right: 10px; background: var(--heap); color: black; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+        
+        .log-entry { font-family: 'Fira Code', monospace; font-size: 11px; margin-bottom: 8px; color: #8b949e; border-left: 2px solid #444; padding-left: 8px; }
+        .log-highlight { color: var(--green); }
+
+        svg { position: absolute; width: 100%; height: 100%; pointer-events: none; top: 0; left: 0; }
+        path { fill: none; stroke: var(--green); stroke-width: 2; transition: 0.4s; }
+
+        h3 { margin-top: 0; font-size: 14px; color: #8b949e; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+    <h2 style="color: white; margin-bottom: 5px;">Behind the Scenes: JS Memory Engine</h2>
+    <p style="color: #8b949e; margin-bottom: 20px;">Type chesi chudandi - Engine em chestundo right side logs lo chudachu.</p>
+
+    <div class="layout">
+        <div class="editor-side">
+            <div class="box">
+                <h3>1. Initial Object</h3>
+                <code style="font-family: 'Fira Code'; font-size: 14px;">
+                    <span style="color: #ff7b72;">let</span> baseData = {<br>
+                    &nbsp;&nbsp;city: "<input type="text" id="cityIn" value="Hyd" oninput="handleTyping()">"<br>
+                    };
+                </code>
+            </div>
+            <div class="box">
+                <h3>2. Reference</h3>
+                <code style="font-family: 'Fira Code'; font-size: 14px;">
+                    <span style="color: #ff7b72;">let</span> userObj = baseData;
+                </code>
+            </div>
+            <div class="box">
+                <label style="cursor: pointer;">
+                    <input type="checkbox" id="reassignBtn" onchange="handleReassign()"> 
+                    <b>Break Link (Re-assign)</b>
+                </label>
+            </div>
+        </div>
+
+        <div class="viz-side">
+            <svg id="svg-layer"></svg>
+            <div class="mem-col">
+                <h3>Stack</h3>
+                <div id="s-base" class="stack-item"><span>baseData</span> <b>#101</b></div>
+                <div id="s-user" class="stack-item"><span>userObj</span> <b id="user-ptr">#101</b></div>
+            </div>
+            <div class="mem-col">
+                <h3>Heap</h3>
+                <div id="h-101" class="heap-obj">
+                    <div class="addr">#101</div>
+                    <div>city: <span id="disp-101" style="color: var(--accent);">"Hyd"</span></div>
+                </div>
+                <div id="h-202" class="heap-obj" style="display: none; border-color: #f0883e;">
+                    <div class="addr" style="background: #f0883e;">#202</div>
+                    <div>city: <span style="color: #f0883e;">"Vizag"</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="log-side" id="logs">
+            <h3>Engine Console</h3>
+            <div class="log-entry">Engine started...</div>
+            <div class="log-entry">Allocating #101 for baseData...</div>
+        </div>
+    </div>
+
+    <script>
+        const logs = document.getElementById('logs');
+        const svg = document.getElementById('svg-layer');
+        let lines = {};
+
+        function addLog(msg, highlight = false) {
+            const div = document.createElement('div');
+            div.className = `log-entry ${highlight ? 'log-highlight' : ''}`;
+            div.innerText = `> ${msg}`;
+            logs.prepend(div);
+        }
+
+        function drawAll() {
+            updateLine('line1', 's-base', 'h-101');
+            const target = document.getElementById('reassignBtn').checked ? 'h-202' : 'h-101';
+            updateLine('line2', 's-user', target);
+        }
+
+        function updateLine(id, start, end) {
+            let path = lines[id];
+            if (!path) {
+                path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                svg.appendChild(path);
+                lines[id] = path;
+            }
+            const s = document.getElementById(start).getBoundingClientRect();
+            const e = document.getElementById(end).getBoundingClientRect();
+            const c = svg.getBoundingClientRect();
+            
+            const x1 = s.right - c.left - 5;
+            const y1 = s.top - c.top + 20;
+            const x2 = e.left - c.left;
+            const y2 = e.top - c.top + 25;
+            
+            path.setAttribute("d", `M ${x1} ${y1} C ${x1+40} ${y1}, ${x2-40} ${y2}, ${x2} ${y2}`);
+            if(end === 'h-202') path.setAttribute('stroke', '#f0883e');
+            else path.setAttribute('stroke', '#3fb950');
+        }
+
+        function handleTyping() {
+            const val = document.getElementById('cityIn').value;
+            document.getElementById('disp-101').innerText = `"${val}"`;
+            addLog(`Mutation: Changing #101.city to "${val}"`, true);
+            addLog(`Note: userObj also reflects this because it points to #101.`);
+        }
+
+        function handleReassign() {
+            const isChecked = document.getElementById('reassignBtn').checked;
+            const h202 = document.getElementById('h-202');
+            const uPtr = document.getElementById('user-ptr');
+
+            if(isChecked) {
+                h202.style.display = 'block';
+                uPtr.innerText = '#202';
+                uPtr.style.color = '#f0883e';
+                addLog(`Re-assignment: userObj = { city: "Vizag" }`);
+                addLog(`Engine: Creating NEW memory address #202...`, true);
+                addLog(`Engine: userObj pointer updated to #202.`);
+            } else {
+                h202.style.display = 'none';
+                uPtr.innerText = '#101';
+                uPtr.style.color = 'inherit';
+                addLog(`Reverted userObj to baseData reference.`);
+            }
+            drawAll();
+        }
+
+        window.onload = () => {
+            drawAll();
+            window.addEventListener('resize', drawAll);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,312 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Type & Watch: JS Memory</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0d1117;
+            --box-bg: #161b22;
+            --border: #30363d;
+            --accent: #58a6ff;
+            --stack: #79c0ff;
+            --heap: #d2a8ff;
+            --ptr: #2ea043;
+            --input-bg: #21262d;
+        }
+
+        body {
+            margin: 0; padding: 20px; background: var(--bg); color: #c9d1d9;
+            font-family: 'Inter', sans-serif; display: flex; flex-direction: column; align-items: center;
+        }
+
+        h2 { margin-bottom: 5px; color: var(--accent); }
+        .subtitle { font-size: 12px; color: #8b949e; margin-bottom: 20px; }
+
+        .container {
+            display: flex; width: 100%; max-width: 1100px; height: 500px; gap: 40px;
+        }
+
+        /* --- LEFT: CODE EDITOR --- */
+        .editor {
+            flex: 1; background: var(--box-bg); border: 1px solid var(--border); border-radius: 12px;
+            padding: 25px; font-family: 'Fira Code', monospace; font-size: 14px; line-height: 2;
+            display: flex; flex-direction: column; position: relative;
+        }
+
+        .code-row { display: flex; align-items: center; flex-wrap: wrap; }
+        .indent { margin-left: 20px; }
+        
+        /* SYNTAX */
+        .kwd { color: #ff7b72; } 
+        .var { color: #79c0ff; }
+        .key { color: #d2a8ff; }
+
+        /* LIVE INPUTS */
+        input[type="text"] {
+            background: var(--input-bg); border: 1px solid #444; color: #a5d6ff;
+            font-family: 'Fira Code', monospace; padding: 2px 5px; border-radius: 4px;
+            width: 80px; outline: none; transition: 0.2s; font-size: 13px;
+        }
+        input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 5px rgba(88, 166, 255, 0.3); }
+
+        /* TOGGLE SWITCH */
+        .toggle-row {
+            margin: 20px 0; padding: 10px; border: 1px dashed #444; border-radius: 6px;
+            background: rgba(255,255,255,0.02);
+        }
+        .toggle-label { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+        input[type="checkbox"] { accent-color: var(--ptr); width: 16px; height: 16px; }
+
+        /* --- RIGHT: VISUALIZER --- */
+        .visualizer {
+            flex: 1.2; position: relative; display: flex; gap: 40px;
+        }
+        
+        .mem-col {
+            flex: 1; background: var(--box-bg); border: 1px solid var(--border); border-radius: 12px;
+            padding: 20px; position: relative;
+        }
+        .stack-col { border-top: 4px solid var(--stack); }
+        .heap-col { border-top: 4px solid var(--heap); }
+
+        .header { text-align: center; font-size: 12px; font-weight: bold; color: #666; margin-bottom: 20px; text-transform: uppercase; }
+
+        /* STACK ITEMS */
+        .stack-var {
+            background: #21262d; border-left: 3px solid var(--stack); padding: 12px;
+            margin-bottom: 15px; border-radius: 4px; font-family: 'Fira Code', monospace;
+            display: flex; justify-content: space-between; font-size: 12px;
+        }
+        .ptr-val { font-weight: bold; color: var(--heap); }
+
+        /* HEAP OBJECTS */
+        .heap-obj {
+            background: #21262d; border: 2px dashed var(--heap); padding: 15px;
+            border-radius: 8px; margin-bottom: 30px; position: relative;
+            font-family: 'Fira Code', monospace; font-size: 12px; transition: 0.3s;
+        }
+        .heap-obj.active { border-style: solid; box-shadow: 0 0 15px rgba(210, 168, 255, 0.1); }
+        .heap-obj.faded { opacity: 0.3; filter: grayscale(1); }
+
+        .addr {
+            position: absolute; top: -10px; right: 10px; background: var(--heap); color: black;
+            font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold;
+        }
+        .prop { margin: 5px 0; color: #8b949e; }
+        .val-display { color: #a5d6ff; font-weight: bold; transition: 0.2s; }
+        .val-display.flash { background: #f0883e; color: black; padding: 0 3px; border-radius: 2px; }
+
+        /* SVG POINTERS */
+        #svgLayer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;
+        }
+        path {
+            fill: none; stroke: var(--ptr); stroke-width: 2; 
+            transition: d 0.5s ease-in-out, stroke 0.3s;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h2>JS Memory: Type & Watch</h2>
+    <div class="subtitle">Edit inputs to see Heap updates instantly</div>
+
+    <div class="container">
+        
+        <div class="editor">
+            <div class="code-row">
+                <span class="kwd">let</span>&nbsp;<span class="var">baseData</span>&nbsp;= {
+            </div>
+            <div class="code-row indent">
+                <span class="key">from</span>: "<input type="text" id="in1" value="Hyd" oninput="updateBase()">",
+            </div>
+            <div class="code-row indent">
+                <span class="key">to</span>: "<input type="text" id="in2" value="Blr" oninput="updateBase()">"
+            </div>
+            <div class="code-row">};</div>
+
+            <br>
+
+            <div class="code-row">
+                <span class="kwd">let</span>&nbsp;<span class="var">userObj</span>&nbsp;=&nbsp;<span class="var">baseData</span>;
+            </div>
+
+            <div class="toggle-row">
+                <label class="toggle-label">
+                    <input type="checkbox" id="reassignCheck" onchange="toggleReassign()">
+                    <span><span class="kwd">Re-assign</span> userObj = { ... }</span>
+                </label>
+                
+                <div id="reassignBlock" style="display:none; margin-top:10px; padding-left:20px; border-left: 2px solid #444;">
+                    <div class="code-row">
+                        <span class="key">from</span>: "<input type="text" id="in3" value="Vizag" oninput="updateUser()">",
+                    </div>
+                    <div class="code-row">
+                        <span class="key">to</span>: "<input type="text" id="in4" value="Goa" oninput="updateUser()">"
+                    </div>
+                </div>
+            </div>
+
+            <div style="font-size:12px; color:#555; margin-top:auto;">
+                * Try editing "Hyd" above and watch the Heap.
+            </div>
+        </div>
+
+        <div class="visualizer">
+            
+            <div class="mem-col stack-col">
+                <div class="header">Stack</div>
+                
+                <div class="stack-var" id="s1">
+                    <span>baseData</span>
+                    <span class="ptr-val"><#101></span>
+                </div>
+
+                <div class="stack-var" id="s2">
+                    <span>userObj</span>
+                    <span class="ptr-val" id="s2-val"><#101></span>
+                </div>
+            </div>
+
+            <div class="mem-col heap-col">
+                <div class="header">Heap</div>
+
+                <div class="heap-obj active" id="h1">
+                    <div class="addr">#101</div>
+                    <div class="prop">from: <span class="val-display" id="h1-from">"Hyd"</span></div>
+                    <div class="prop">to: <span class="val-display" id="h1-to">"Blr"</span></div>
+                </div>
+
+                <div class="heap-obj faded" id="h2">
+                    <div class="addr" style="background:#58a6ff">#999</div>
+                    <div class="prop">from: <span class="val-display" id="h2-from">"Vizag"</span></div>
+                    <div class="prop">to: <span class="val-display" id="h2-to">"Goa"</span></div>
+                </div>
+            </div>
+
+            <svg id="svgLayer"></svg>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const reassignCheck = document.getElementById('reassignCheck');
+        const reassignBlock = document.getElementById('reassignBlock');
+        
+        const h1From = document.getElementById('h1-from');
+        const h1To = document.getElementById('h1-to');
+        const h2From = document.getElementById('h2-from');
+        const h2To = document.getElementById('h2-to');
+        
+        const s2Val = document.getElementById('s2-val');
+        const h2Obj = document.getElementById('h2');
+        const svg = document.getElementById('svgLayer');
+
+        let isReassigned = false;
+        let ptr1, ptr2;
+
+        // Initialize
+        window.onload = () => {
+            ptr1 = drawPointer('s1', 'h1', '#2ea043');
+            ptr2 = drawPointer('s2', 'h1', '#2ea043');
+        };
+
+        // Live Update: Base Data
+        function updateBase() {
+            const val1 = document.getElementById('in1').value;
+            const val2 = document.getElementById('in2').value;
+
+            // Flash effect
+            flashText(h1From, val1);
+            h1To.innerText = `"${val2}"`;
+        }
+
+        // Live Update: User Obj (Only works if re-assigned)
+        function updateUser() {
+            const val3 = document.getElementById('in3').value;
+            const val4 = document.getElementById('in4').value;
+
+            flashText(h2From, val3);
+            h2To.innerText = `"${val4}"`;
+        }
+
+        // Toggle Logic
+        function toggleReassign() {
+            isReassigned = reassignCheck.checked;
+
+            if (isReassigned) {
+                // UI: Show inputs
+                reassignBlock.style.display = 'block';
+                
+                // Stack: Change Value
+                s2Val.innerText = "<#999>";
+                s2Val.style.color = "#58a6ff"; // Blue
+
+                // Heap: Activate Obj 2
+                h2Obj.classList.remove('faded');
+                h2Obj.classList.add('active');
+
+                // Pointer: Move s2 -> h2
+                updatePointer(ptr2, 's2', 'h2');
+                ptr2.setAttribute('stroke', '#58a6ff'); // Blue Line
+
+            } else {
+                // UI: Hide inputs
+                reassignBlock.style.display = 'none';
+
+                // Stack: Revert Value
+                s2Val.innerText = "<#101>";
+                s2Val.style.color = "#d2a8ff"; // Purple
+
+                // Heap: Fade Obj 2
+                h2Obj.classList.add('faded');
+                h2Obj.classList.remove('active');
+
+                // Pointer: Move s2 -> h1
+                updatePointer(ptr2, 's2', 'h1');
+                ptr2.setAttribute('stroke', '#2ea043'); // Green Line
+            }
+        }
+
+        // --- VISUAL HELPERS ---
+
+        function flashText(element, newVal) {
+            element.innerText = `"${newVal}"`;
+            element.classList.add('flash');
+            setTimeout(() => element.classList.remove('flash'), 300);
+        }
+
+        function drawPointer(stackId, heapId, color) {
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("stroke", color);
+            svg.appendChild(path);
+            
+            // Calculate and set 'd'
+            updatePointer(path, stackId, heapId);
+            return path;
+        }
+
+        function updatePointer(path, stackId, heapId) {
+            const s = document.getElementById(stackId).getBoundingClientRect();
+            const h = document.getElementById(heapId).getBoundingClientRect();
+            const c = document.querySelector('.visualizer').getBoundingClientRect();
+
+            const x1 = s.right - c.left - 10;
+            const y1 = s.top - c.top + 20;
+            const x2 = h.left - c.left;
+            const y2 = h.top - c.top + 30;
+
+            const d = `M ${x1} ${y1} C ${x1 + 50} ${y1}, ${x2 - 50} ${y2}, ${x2} ${y2}`;
+            path.setAttribute("d", d);
+        }
+
+    </script>
+</body>
+</html>
+
+```

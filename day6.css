@@ -1,0 +1,19 @@
+.container {
+  background-color: green;
+  display: flex;
+}
+
+@media (min-width: 768px) {
+  .containers {
+    background-color: blue;
+  }
+}
+
+
+@media (min-width: 768px) and (max-width: 1199.98px) {
+  .containers {
+    background-color: red;
+    display: flex;
+    flex-direction: column;
+  }
+}

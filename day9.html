@@ -1,0 +1,26 @@
+<!doctype html>
+
+<body>
+  Arrays and loops
+
+  <button onclick="getArr()">GetArr</button>
+</body>
+
+<script>
+  function getArr() {
+    debugger;
+    let initialBaseData = {
+      from: "Hyderabad",
+      to: "Bengaluru",
+      departure: "6thFeb2026",
+      Travellerclass: 1,
+    };
+
+    
+    let gangadharObj = {...initialBaseData};
+
+    gangadharObj.from = "Secuderabad";
+    console.log("initialBaseData", initialBaseData)
+    console.log("after update", gangadharObj)
+  }
+</script>
